@@ -60,7 +60,7 @@ header h1 {
 }
 .header-sub { font-size: 9px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; display: block; margin-top: 2px; }
 .header-right { position: absolute; right: 0; display: flex; gap: 8px; align-items: center; }
-.user-chip {
+.user-chip { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: var(--panel); border: 1px solid var(--border2);
   border-radius: 6px; padding: 5px 10px; font-size: 10px; color: var(--glow2);
   font-family: 'Syne', sans-serif; font-weight: 700;
@@ -299,8 +299,9 @@ const randState = () => b64u(crypto.getRandomValues(new Uint8Array(16)));
 async function startLogin() {
   const { verifier, challenge } = await makePkce();
   const state = randState();
-  sessionStorage.setItem('pkce_v', verifier);
-  sessionStorage.setItem('oa_s', state);
+  // Use localStorage (not sessionStorage) so these survive the redirect to Authelia and back
+  localStorage.setItem('pkce_v', verifier);
+  localStorage.setItem('oa_s', state);
   const p = new URLSearchParams({ response_type:'code', client_id:CONFIG.clientId, redirect_uri:CONFIG.redirectUri, scope:CONFIG.scopes, state, code_challenge:challenge, code_challenge_method:'S256' });
   window.location.href = `${CONFIG.autheliaUrl}/api/oidc/authorization?${p}`;
 }
@@ -309,11 +310,18 @@ async function handleCallback() {
   const p = new URLSearchParams(window.location.search);
   const code = p.get('code'), state = p.get('state');
   if (!code) return false;
-  if (state !== sessionStorage.getItem('oa_s')) { showErr('State mismatch — try again.'); return false; }
-  const body = new URLSearchParams({ grant_type:'authorization_code', client_id:CONFIG.clientId, redirect_uri:CONFIG.redirectUri, code, code_verifier:sessionStorage.getItem('pkce_v') });
+  const savedState = localStorage.getItem('oa_s');
+  if (state !== savedState) { showErr(`State mismatch — please try again.<br><small style="opacity:.5">got: ${state?.slice(0,8)}… expected: ${savedState?.slice(0,8)}…</small>`); return false; }
+  const body = new URLSearchParams({ grant_type:'authorization_code', client_id:CONFIG.clientId, redirect_uri:CONFIG.redirectUri, code, code_verifier:localStorage.getItem('pkce_v') });
+  // Clean up PKCE values immediately after use
+  localStorage.removeItem('pkce_v');
+  localStorage.removeItem('oa_s');
   try {
     const res = await fetch(`${CONFIG.autheliaUrl}/api/oidc/token`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
-    if (!res.ok) throw new Error(`Token exchange ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(()=>'');
+      throw new Error(`Token exchange ${res.status}${errText ? ': ' + errText : ''}`);
+    }
     const data = await res.json();
     const pl = JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
     sessionStorage.setItem('oidc_user', JSON.stringify({ name: pl.name||pl.preferred_username||pl.sub, sub: pl.sub }));
@@ -562,7 +570,7 @@ async function boot() {
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appShell').classList.add('visible');
   const user=getUser();
-  document.getElementById('userChip').textContent=user?.name||'—';
+  const rawName=user?.name||'—'; const displayName=rawName.match(/^[0-9a-f]{8}-/i)?rawName.slice(0,8)+'…':rawName; document.getElementById('userChip').textContent=displayName;
   const saved=localStorage.getItem('codeorb_ghuser');
   if(saved) document.getElementById('ghUser').value=saved;
   if(getGHToken()){
