@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeOrb</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+:root {
+  --bg: #060610; --panel: #0c0c1e; --panel2: #07071a;
+  --border: #1a1a3a; --border2: #242450;
+  --glow1: #38bdf8; --glow2: #818cf8; --glow3: #e879f9;
+  --warn: #f59e0b; --err: #f87171; --ok: #34d399;
+  --text: #e2e8f0; --muted: #475569; --muted2: #334155;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Space Mono', monospace; font-size: 12px;
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  padding: 28px 16px 60px;
+  background-image:
+    radial-gradient(ellipse at 10% 20%, rgba(56,189,248,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(232,121,249,0.06) 0%, transparent 50%);
+}
+
+/* AUTH SCREEN */
+#authScreen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 80vh; gap: 24px; text-align: center;
+}
+#authScreen h1 {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 36px;
+  background: linear-gradient(135deg, var(--glow1), var(--glow2), var(--glow3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+#authScreen p { color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+.login-btn {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+  letter-spacing: 1px; padding: 14px 32px; border-radius: 8px; border: none;
+  cursor: pointer; text-transform: uppercase;
+  background: linear-gradient(135deg, var(--glow1), var(--glow2));
+  color: #060610; box-shadow: 0 0 24px rgba(56,189,248,0.3); transition: all 0.2s;
+}
+.login-btn:hover { box-shadow: 0 0 36px rgba(56,189,248,0.5); transform: translateY(-2px); }
+.auth-note { font-size: 10px; color: var(--muted); line-height: 1.8; max-width: 340px; }
+.auth-note strong { color: var(--glow2); }
+
+/* HEADER */
+header {
+  text-align: center; margin-bottom: 28px;
+  position: relative; width: 100%; max-width: 740px;
+  display: flex; align-items: center; justify-content: center;
+}
+header h1 {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px;
+  background: linear-gradient(135deg, var(--glow1), var(--glow2), var(--glow3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header-sub { font-size: 9px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; display: block; margin-top: 2px; }
+.header-right { position: absolute; right: 0; display: flex; gap: 8px; align-items: center; }
+.user-chip {
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 5px 10px; font-size: 10px; color: var(--glow2);
+  font-family: 'Syne', sans-serif; font-weight: 700;
+}
+.icon-btn {
+  background: transparent; border: 1px solid var(--border2); border-radius: 6px;
+  color: var(--muted); width: 30px; height: 30px; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.icon-btn:hover { border-color: var(--glow2); color: var(--glow2); }
+
+/* LAYOUT */
+.layout { display: grid; grid-template-columns: 230px 1fr; gap: 14px; width: 100%; max-width: 740px; }
+
+/* ORB */
+.orb-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+canvas#orb { display: block; }
+.orb-label { text-align: center; }
+.orb-stage { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 2px; color: var(--glow1); text-shadow: 0 0 10px var(--glow1); }
+.orb-name { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 3px; }
+.bar-section { width: 100%; }
+.bar-row { display: flex; justify-content: space-between; font-size: 8px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
+.bar-row .bv { color: var(--glow2); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 10px; }
+.bar-track { height: 4px; background: #0a0a1e; border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+.bar-fill { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+.xp-fill { background: linear-gradient(90deg, var(--glow1), var(--glow2)); box-shadow: 0 0 6px var(--glow2); }
+.en-fill { background: linear-gradient(90deg, var(--glow2), var(--glow3)); }
+.st-fill { background: linear-gradient(90deg, var(--warn), #ef4444); }
+
+/* PANELS */
+.right-col { display: flex; flex-direction: column; gap: 12px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; position: relative; overflow: hidden; }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--glow2), transparent); opacity: 0.3; }
+.panel-label { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--glow2); margin-bottom: 12px; font-family: 'Syne', sans-serif; font-weight: 700; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+.stat-box .sl { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.stat-box .sv { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; line-height: 1; }
+.stat-box .sv small { font-size: 10px; color: var(--muted); font-weight: 400; }
+
+/* SYNC */
+.sync-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.user-input { flex: 1; background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 11px; padding: 8px 10px; outline: none; transition: border-color 0.2s; }
+.user-input:focus { border-color: var(--glow2); }
+.user-input::placeholder { color: var(--muted2); }
+.btn { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 1px; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; text-transform: uppercase; white-space: nowrap; }
+.btn-primary { background: linear-gradient(135deg, var(--glow1), var(--glow2)); color: #060610; box-shadow: 0 0 16px rgba(56,189,248,0.2); }
+.btn-primary:hover { box-shadow: 0 0 24px rgba(56,189,248,0.4); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--glow3); color: var(--glow3); }
+#syncStatus { font-size: 10px; min-height: 14px; letter-spacing: 0.3px; line-height: 1.6; padding: 6px 8px; border-radius: 5px; margin-top: 6px; display: none; }
+#syncStatus.ok   { display: block; background: rgba(52,211,153,0.08); color: var(--ok);    border: 1px solid rgba(52,211,153,0.2); }
+#syncStatus.err  { display: block; background: rgba(248,113,113,0.08); color: var(--err);   border: 1px solid rgba(248,113,113,0.2); }
+#syncStatus.info { display: block; background: rgba(56,189,248,0.08);  color: var(--glow1); border: 1px solid rgba(56,189,248,0.2); }
+.last-sync { font-size: 9px; color: var(--muted); margin-top: 6px; }
+.token-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.token-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all 0.3s; }
+.token-dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.token-label { font-size: 10px; color: var(--muted); }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(6,6,16,0.85); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--panel); border: 1px solid var(--border2); border-radius: 12px; padding: 26px; width: 100%; max-width: 400px; position: relative; box-shadow: 0 0 60px rgba(56,189,248,0.1); }
+.modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--glow1), transparent); opacity: 0.5; }
+.modal h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+.modal-sub { font-size: 10px; color: var(--muted); line-height: 1.8; margin-bottom: 18px; }
+.modal-sub a { color: var(--glow1); text-decoration: none; }
+.modal-sub a:hover { text-decoration: underline; }
+.field-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--glow2); margin-bottom: 6px; font-family: 'Syne', sans-serif; font-weight: 700; }
+.token-wrap { position: relative; margin-bottom: 6px; }
+.token-input { width: 100%; background: var(--panel2); border: 1px solid var(--border2); border-radius: 6px; color: var(--glow1); font-family: 'Space Mono', monospace; font-size: 11px; padding: 10px 38px 10px 10px; outline: none; transition: border-color 0.2s; }
+.token-input:focus { border-color: var(--glow1); }
+.token-input::placeholder { color: var(--muted2); font-size: 11px; }
+.eye-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 14px; }
+.eye-btn:hover { color: var(--glow1); }
+.security-note { font-size: 9px; color: var(--muted); line-height: 1.7; background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.12); border-radius: 5px; padding: 8px 10px; margin-bottom: 16px; }
+#tokenFeedback { font-size: 9px; margin-bottom: 10px; min-height: 12px; }
+#tokenFeedback.ok  { color: var(--ok); }
+#tokenFeedback.err { color: var(--err); }
+.modal-btns { display: flex; gap: 8px; }
+
+/* HISTORY */
+.history-list { max-height: 110px; overflow-y: auto; }
+.history-list::-webkit-scrollbar { width: 3px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.h-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10px; gap: 6px; }
+.h-item:last-child { border-bottom: none; }
+.h-date { color: var(--muted); white-space: nowrap; }
+.h-meta { color: var(--glow3); font-size: 9px; flex: 1; text-align: center; }
+.h-xp { color: var(--glow1); font-family: 'Syne', sans-serif; font-weight: 700; white-space: nowrap; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid rgba(56,189,248,0.3); border-top-color: var(--glow1); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; vertical-align: middle; }
+#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: linear-gradient(135deg, var(--glow1), var(--glow2)); color: #060610; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; padding: 11px 26px; border-radius: 99px; transition: transform 0.35s cubic-bezier(.4,0,.2,1); z-index: 300; letter-spacing: 1px; white-space: nowrap; box-shadow: 0 0 30px rgba(56,189,248,0.35); }
+#toast.show { transform: translateX(-50%) translateY(0); }
+#appShell { display: none; width: 100%; flex-direction: column; align-items: center; }
+#appShell.visible { display: flex; }
+@media (max-width: 560px) { .layout { grid-template-columns: 1fr; } .header-right { position: static; margin-top: 8px; } header { flex-direction: column; gap: 8px; } }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div><h1>CODEORB</h1><p>Your GitHub Companion</p></div>
+  <button class="login-btn" onclick="startLogin()">⬡ Sign in with Authelia</button>
+  <p class="auth-note">You'll be redirected to your <strong>Authelia</strong> instance to log in, then returned here automatically.</p>
+</div>
+
+<!-- APP -->
+<div id="appShell">
+  <header>
+    <div><h1>CODEORB</h1><span class="header-sub">Live GitHub Companion</span></div>
+    <div class="header-right">
+      <div class="user-chip" id="userChip">—</div>
+      <button class="icon-btn" onclick="openTokenModal()" title="GitHub Token">⚙</button>
+      <button class="icon-btn" onclick="logout()" title="Sign out">⏻</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="orb-col">
+      <canvas id="orb" width="220" height="220"></canvas>
+      <div class="orb-label">
+        <div class="orb-stage" id="orbStage">DORMANT</div>
+        <div class="orb-name" id="orbName">Awaiting sync…</div>
+      </div>
+      <div class="bar-section">
+        <div class="bar-row"><span>XP to next</span><span class="bv" id="xpText">—</span></div>
+        <div class="bar-track"><div class="bar-fill xp-fill" id="xpFill" style="width:0%"></div></div>
+      </div>
+      <div class="bar-section">
+        <div class="bar-row"><span>Energy</span><span class="bv" id="enText">—</span></div>
+        <div class="bar-track"><div class="bar-fill en-fill" id="enFill" style="width:10%"></div></div>
+      </div>
+      <div class="bar-section">
+        <div class="bar-row"><span>Streak boost</span><span class="bv" id="stText">×1.0</span></div>
+        <div class="bar-track"><div class="bar-fill st-fill" id="stFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="panel">
+        <div class="panel-label">// Orb Status</div>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="sl">Level</div><div class="sv" id="statLevel">1</div></div>
+          <div class="stat-box"><div class="sl">Total XP</div><div class="sv" id="statXp">0</div></div>
+          <div class="stat-box"><div class="sl">Commits</div><div class="sv" id="statCommits">0</div></div>
+          <div class="stat-box"><div class="sl">Streak</div><div class="sv" id="statStreak">0 <small>days</small></div></div>
+          <div class="stat-box"><div class="sl">Repos</div><div class="sv" id="statRepos">0</div></div>
+          <div class="stat-box"><div class="sl">This Week</div><div class="sv" id="statWeek">0</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-label">// GitHub Sync</div>
+        <div class="sync-row">
+          <input class="user-input" id="ghUser" placeholder="your-github-username" />
+          <button class="btn btn-primary" id="syncBtn" onclick="syncGitHub()">⬡ Sync</button>
+        </div>
+        <div class="token-row">
+          <div class="token-dot" id="tokenDot"></div>
+          <span class="token-label" id="tokenLabel">No token yet — click ⚙ to add one</span>
+        </div>
+        <div id="syncStatus"></div>
+        <div class="last-sync" id="lastSync"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-label">// Sync History</div>
+        <div class="history-list" id="historyList">
+          <div class="h-item"><span class="h-date" style="color:var(--border)">No syncs yet.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOKEN MODAL -->
+<div class="modal-overlay" id="tokenModal" onclick="if(event.target===this)closeTokenModal()">
+  <div class="modal">
+    <h2>GitHub Token</h2>
+    <p class="modal-sub">
+      Generate at <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a>.
+      Required scopes: <strong>read:user</strong>, <strong>repo</strong>, <strong>gist</strong>.
+      The gist scope enables cross-device progress sync.
+    </p>
+    <div class="field-label">Personal Access Token</div>
+    <div class="token-wrap">
+      <input class="token-input" id="tokenInput" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
+      <button class="eye-btn" onclick="toggleEye()">👁</button>
+    </div>
+    <div class="security-note">
+      🔒 Stored in <strong>sessionStorage</strong> — cleared when you close the tab. Progress saves to a <strong>private GitHub Gist</strong> and reloads on next login. Token never leaves your browser.
+    </div>
+    <div id="tokenFeedback"></div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" style="flex:1" onclick="saveToken()">Save Token</button>
+      <button class="btn btn-ghost" onclick="closeTokenModal()">Cancel</button>
+      <button class="btn btn-ghost" onclick="removeToken()">✕ Remove</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG — fill in your values
+// ══════════════════════════════════════════
+const CONFIG = {
+  autheliaUrl: 'https://auth.26uc.net',       // your Authelia base URL
+  clientId:    'codeorb',                             // must match authelia config
+  redirectUri: 'https://ionstat.github.io/codeorb/',  // your Pages URL
+  scopes:      'openid profile email',
+};
+
+// ══════════════════════════════════════════
+// PKCE
+// ══════════════════════════════════════════
+const b64u = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function makePkce() {
+  const v = b64u(crypto.getRandomValues(new Uint8Array(32)));
+  const c = b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
+  return { verifier: v, challenge: c };
+}
+const randState = () => b64u(crypto.getRandomValues(new Uint8Array(16)));
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+async function startLogin() {
+  const { verifier, challenge } = await makePkce();
+  const state = randState();
+  sessionStorage.setItem('pkce_v', verifier);
+  sessionStorage.setItem('oa_s', state);
+  const p = new URLSearchParams({ response_type:'code', client_id:CONFIG.clientId, redirect_uri:CONFIG.redirectUri, scope:CONFIG.scopes, state, code_challenge:challenge, code_challenge_method:'S256' });
+  window.location.href = `${CONFIG.autheliaUrl}/api/oidc/authorization?${p}`;
+}
+
+async function handleCallback() {
+  const p = new URLSearchParams(window.location.search);
+  const code = p.get('code'), state = p.get('state');
+  if (!code) return false;
+  if (state !== sessionStorage.getItem('oa_s')) { showErr('State mismatch — try again.'); return false; }
+  const body = new URLSearchParams({ grant_type:'authorization_code', client_id:CONFIG.clientId, redirect_uri:CONFIG.redirectUri, code, code_verifier:sessionStorage.getItem('pkce_v') });
+  try {
+    const res = await fetch(`${CONFIG.autheliaUrl}/api/oidc/token`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+    if (!res.ok) throw new Error(`Token exchange ${res.status}`);
+    const data = await res.json();
+    const pl = JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    sessionStorage.setItem('oidc_user', JSON.stringify({ name: pl.name||pl.preferred_username||pl.sub, sub: pl.sub }));
+    sessionStorage.setItem('oidc_at', data.access_token);
+    window.history.replaceState({}, '', CONFIG.redirectUri);
+    return true;
+  } catch(e) { showErr(e.message); return false; }
+}
+
+function getUser()    { try { return JSON.parse(sessionStorage.getItem('oidc_user')); } catch { return null; } }
+function isLoggedIn() { return !!getUser(); }
+function logout() {
+  sessionStorage.clear();
+  window.location.href = `${CONFIG.autheliaUrl}/api/oidc/logout?post_logout_redirect_uri=${encodeURIComponent(CONFIG.redirectUri)}`;
+}
+function showErr(msg) {
+  document.getElementById('authScreen').innerHTML =
+    `<h1 style="font-family:'Syne',sans-serif;font-size:28px;color:var(--err)">Auth Error</h1>
+     <p style="color:var(--muted);max-width:340px;line-height:1.8;margin:12px 0">${msg}</p>
+     <button class="login-btn" onclick="location.href='${CONFIG.redirectUri}'">Try Again</button>`;
+}
+
+// ══════════════════════════════════════════
+// GITHUB TOKEN
+// ══════════════════════════════════════════
+const getGHToken  = () => sessionStorage.getItem('gh_token')||'';
+const setGHToken  = t  => sessionStorage.setItem('gh_token', t);
+const clearGHToken= () => sessionStorage.removeItem('gh_token');
+
+// ══════════════════════════════════════════
+// GIST SYNC
+// ══════════════════════════════════════════
+const GIST_FILE = 'codeorb-state.json';
+let gistId = localStorage.getItem('codeorb_gist_id')||null;
+
+async function gistReq(method, path, body) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    method, headers:{ 'Authorization':`Bearer ${getGHToken()}`, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`Gist API ${res.status}`);
+  return res.json();
+}
+
+async function loadFromGist() {
+  if (!gistId) return null;
+  try {
+    const g = await gistReq('GET', `/gists/${gistId}`);
+    const c = g.files[GIST_FILE]?.content;
+    return c ? JSON.parse(c) : null;
+  } catch { return null; }
+}
+
+async function saveToGist(s) {
+  const content = JSON.stringify(s, null, 2);
+  if (gistId) {
+    await gistReq('PATCH', `/gists/${gistId}`, { files:{ [GIST_FILE]:{ content } } });
+  } else {
+    const g = await gistReq('POST', '/gists', { description:'CodeOrb progress — do not delete', public:false, files:{ [GIST_FILE]:{ content } } });
+    gistId = g.id;
+    localStorage.setItem('codeorb_gist_id', gistId);
+  }
+}
+
+// ══════════════════════════════════════════
+// STATE / STAGES
+// ══════════════════════════════════════════
+const STAGES = [
+  { minLevel:1,  name:'DORMANT',      desc:'Awaiting sync…',           hue:220, rings:1, pts:0  },
+  { minLevel:2,  name:'AWAKENING',    desc:'First commits absorbed',    hue:200, rings:2, pts:5  },
+  { minLevel:5,  name:'PULSING',      desc:'Growing with your code',    hue:185, rings:2, pts:9  },
+  { minLevel:10, name:'RESONANT',     desc:'In sync with the repo',     hue:260, rings:3, pts:14 },
+  { minLevel:20, name:'RADIANT',      desc:'Pure commit energy',        hue:300, rings:4, pts:20 },
+  { minLevel:35, name:'TRANSCENDENT', desc:'Beyond the codebase',       hue:160, rings:5, pts:28 },
+];
+const XP_TABLE = [0,60,150,280,460,700,1010,1400,1890,2490,3220,4100,5160,6430,7950,9770,11950,14550,17640,21300,25620];
+let state = { totalXp:0, level:1, totalCommits:0, streak:0, repoCount:0, syncs:0, history:[], lastSyncDate:null, weekCommits:0 };
+let orbEnergy = 0.1;
+
+const xpFor   = l => l < XP_TABLE.length ? XP_TABLE[l] : XP_TABLE[XP_TABLE.length-1]+(l-XP_TABLE.length+1)*6000;
+const curFloor= () => xpFor(state.level-1);
+const curCeil = () => xpFor(state.level);
+function curStage() { let s=STAGES[0]; for(const st of STAGES) if(state.level>=st.minLevel) s=st; return s; }
+function streakMult() { return state.streak>=30?2.0:state.streak>=14?1.6:state.streak>=7?1.3:state.streak>=3?1.15:1.0; }
+
+// ══════════════════════════════════════════
+// GITHUB API
+// ══════════════════════════════════════════
+async function ghGet(path) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    headers:{ 'Authorization':`Bearer ${getGHToken()}`, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' }
+  });
+  if (!res.ok) throw new Error(`GitHub ${res.status}: ${res.statusText}`);
+  return res.json();
+}
+
+async function fetchStats(username) {
+  const [user, repos, events] = await Promise.all([
+    ghGet(`/users/${username}`),
+    ghGet(`/users/${username}/repos?per_page=100&sort=pushed`),
+    ghGet(`/users/${username}/events?per_page=100`),
+  ]);
+  const days={}, weekAgo=Date.now()-7*86400000;
+  let total=0, week=0;
+  for (const e of events) {
+    if (e.type!=='PushEvent') continue;
+    const c=e.payload.size||0, d=e.created_at.slice(0,10);
+    days[d]=(days[d]||0)+c; total+=c;
+    if (new Date(e.created_at).getTime()>weekAgo) week+=c;
+  }
+  const sorted=Object.keys(days).sort().reverse();
+  let streak=0;
+  if (sorted.length) {
+    const t=new Date().toISOString().slice(0,10), y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    if (sorted[0]===t||sorted[0]===y) {
+      streak=1; let exp=new Date(sorted[0]);
+      for(let i=1;i<sorted.length;i++){exp=new Date(exp-86400000);if(sorted[i]===exp.toISOString().slice(0,10))streak++;else break;}
+    }
+  }
+  return { login:user.login, repoCount:repos.length, commitCount:total, weekCommits:week, streak };
+}
+
+// ══════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════
+async function syncGitHub() {
+  const username = document.getElementById('ghUser').value.trim();
+  if (!username)    { ss('err','✗ Enter your GitHub username.'); return; }
+  if (!getGHToken()){ ss('err','✗ Add a GitHub token first — click ⚙ above.'); return; }
+  const btn=document.getElementById('syncBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Syncing…';
+  ss('info','⟳ Fetching from GitHub…');
+  try {
+    const d = await fetchStats(username);
+    const newC=Math.max(0,d.commitCount-(state._snap||0)), mult=streakMult();
+    const xp=Math.round((newC>0?newC:Math.max(d.weekCommits,1))*4*mult);
+    const prev=state.level;
+    state.totalXp+=xp; state.totalCommits=d.commitCount; state.weekCommits=d.weekCommits;
+    state.streak=Math.max(state.streak,d.streak); state.repoCount=d.repoCount;
+    state.syncs++; state._snap=d.commitCount; state.lastSyncDate=new Date().toISOString();
+    while(state.totalXp>=curCeil()) state.level++;
+    state.history.unshift({date:new Date().toLocaleDateString(),commits:d.commitCount,week:d.weekCommits,streak:d.streak,xp,mult:mult.toFixed(1)});
+    if(state.history.length>30) state.history.pop();
+    localStorage.setItem('codeorb_ghuser', username);
+    ss('info','⟳ Saving to Gist…');
+    await saveToGist(state);
+    ss('ok',`✓ @${d.login} · ${d.commitCount} commits · ${d.weekCommits} this week · ${d.streak}-day streak → +${xp} XP (×${mult.toFixed(1)}) · Gist saved ✓`);
+    if(state.level>prev){showToast(`✦ LEVEL ${state.level} — ${curStage().name}`);triggerLU();}
+    else showToast(`+${xp} XP absorbed`);
+    render();
+  } catch(e) {
+    const m=e.message;
+    ss('err', m.includes('401')?'✗ Token rejected — check scopes: read:user, repo, gist.'
+             :m.includes('404')?'✗ GitHub user not found.'
+             :m.includes('403')?'✗ Rate limited — wait a minute.'
+             :`✗ ${m}`);
+  } finally { btn.disabled=false; btn.innerHTML='⬡ Sync'; }
+}
+
+const ss = (cls,msg) => { const e=document.getElementById('syncStatus'); e.className=cls; e.textContent=msg; };
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function render() {
+  const st=curStage();
+  document.getElementById('orbStage').textContent=st.name;
+  document.getElementById('orbName').textContent=st.desc;
+  document.getElementById('statLevel').textContent=state.level;
+  document.getElementById('statXp').textContent=state.totalXp.toLocaleString();
+  document.getElementById('statCommits').textContent=state.totalCommits.toLocaleString();
+  document.getElementById('statStreak').innerHTML=`${state.streak} <small>days</small>`;
+  document.getElementById('statRepos').textContent=state.repoCount;
+  document.getElementById('statWeek').textContent=state.weekCommits;
+  const f=curFloor(),c=curCeil();
+  document.getElementById('xpFill').style.width=Math.min(100,((state.totalXp-f)/Math.max(1,c-f))*100)+'%';
+  document.getElementById('xpText').textContent=(c-state.totalXp).toLocaleString()+' XP';
+  let en=10,enL='No syncs yet';
+  if(state.lastSyncDate){const d=(Date.now()-new Date(state.lastSyncDate))/86400000;
+    if(d<1){en=100;enL='⚡ Charged';}else if(d<2){en=75;enL='◎ Active';}else if(d<4){en=50;enL='◌ Fading';}else if(d<7){en=25;enL='○ Dimming';}else{en=8;enL='· Dormant';}}
+  document.getElementById('enFill').style.width=en+'%';
+  document.getElementById('enText').textContent=enL;
+  orbEnergy=en/100;
+  const m=streakMult();
+  document.getElementById('stFill').style.width=Math.min(100,(state.streak/30)*100)+'%';
+  document.getElementById('stText').textContent='×'+m.toFixed(1);
+  if(state.lastSyncDate) document.getElementById('lastSync').textContent='Last sync: '+new Date(state.lastSyncDate).toLocaleString();
+  const hl=document.getElementById('historyList');
+  hl.innerHTML=!state.history.length
+    ?'<div class="h-item"><span class="h-date" style="color:var(--border)">No syncs yet.</span></div>'
+    :state.history.map(h=>`<div class="h-item"><span class="h-date">${h.date}</span><span class="h-meta">${h.commits} commits · ${h.week} wk</span><span class="h-xp">+${h.xp} XP</span></div>`).join('');
+  const has=!!getGHToken();
+  document.getElementById('tokenDot').className='token-dot'+(has?' on':'');
+  document.getElementById('tokenLabel').textContent=has?'GitHub token connected':'No token — click ⚙ to add one';
+}
+
+// ══════════════════════════════════════════
+// TOKEN MODAL
+// ══════════════════════════════════════════
+function openTokenModal()  { document.getElementById('tokenInput').value=getGHToken(); document.getElementById('tokenFeedback').textContent=''; document.getElementById('tokenModal').classList.add('open'); }
+function closeTokenModal() { document.getElementById('tokenModal').classList.remove('open'); }
+function toggleEye()       { const i=document.getElementById('tokenInput'); i.type=i.type==='password'?'text':'password'; }
+function saveToken() {
+  const v=document.getElementById('tokenInput').value.trim();
+  if(!v){tf('err','✗ Paste a token first.');return;}
+  setGHToken(v); tf('ok','✓ Token saved for this session.'); render();
+  setTimeout(closeTokenModal,800);
+}
+function removeToken() { clearGHToken(); tf('ok','Token removed.'); render(); }
+const tf=(cls,msg)=>{const e=document.getElementById('tokenFeedback');e.className=cls;e.textContent=msg;};
+
+// ══════════════════════════════════════════
+// ORB CANVAS
+// ══════════════════════════════════════════
+const canvas=document.getElementById('orb'), ctx=canvas.getContext('2d');
+const CX=110,CY=110; let t=0,luFlash=0; const parts=[];
+const triggerLU=()=>{luFlash=90;};
+const spawnP=h=>{const a=Math.random()*Math.PI*2,s=.6+Math.random()*1.8;parts.push({x:CX+(Math.random()-.5)*16,y:CY+(Math.random()-.5)*16,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,dec:.012+Math.random()*.016,sz:1.5+Math.random()*3,h});};
+
+function drawOrb(){
+  ctx.clearRect(0,0,220,220);
+  const s=curStage(),si=STAGES.indexOf(s),h=s.hue,br=28+Math.min(si*10,52),pr=br+Math.sin(t*.034)*(3+orbEnergy*5);
+  if(luFlash>0){const p=luFlash/90,fr=br+(1-p)*65;ctx.save();ctx.globalAlpha=p*.8;ctx.strokeStyle=`hsl(${h},100%,80%)`;ctx.lineWidth=3;ctx.shadowBlur=28;ctx.shadowColor=`hsl(${h},100%,70%)`;ctx.beginPath();ctx.arc(CX,CY,fr,0,Math.PI*2);ctx.stroke();ctx.restore();luFlash--;}
+  for(let i=3;i>=1;i--){const g=ctx.createRadialGradient(CX,CY,0,CX,CY,pr*(1+i*.5));g.addColorStop(0,`hsla(${h},100%,65%,${.1/i})`);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.arc(CX,CY,pr*(1+i*.5),0,Math.PI*2);ctx.fill();}
+  for(let ri=0;ri<s.rings;ri++){const rr=pr*(.75+ri*.22),rot=t*(.008+ri*.004)*(ri%2===0?1:-1),d=(Math.PI*rr*2/(6+ri*4))*.5;ctx.save();ctx.translate(CX,CY);ctx.rotate(rot);ctx.strokeStyle=`hsla(${h+ri*35},90%,72%,${.2+orbEnergy*.3})`;ctx.lineWidth=1;ctx.setLineDash([d,d]);ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
+  const co=ctx.createRadialGradient(CX-pr*.28,CY-pr*.28,0,CX,CY,pr);co.addColorStop(0,`hsla(${h+45},100%,96%,${.82+orbEnergy*.15})`);co.addColorStop(.35,`hsla(${h},100%,62%,.9)`);co.addColorStop(.72,`hsla(${h-35},90%,38%,.85)`);co.addColorStop(1,`hsla(${h-65},80%,18%,.6)`);
+  ctx.save();ctx.shadowBlur=28+orbEnergy*22;ctx.shadowColor=`hsl(${h},100%,58%)`;ctx.fillStyle=co;ctx.beginPath();ctx.arc(CX,CY,pr,0,Math.PI*2);ctx.fill();ctx.restore();
+  const sh=ctx.createRadialGradient(CX-pr*.32,CY-pr*.32,0,CX,CY,pr*.58);sh.addColorStop(0,'rgba(255,255,255,.3)');sh.addColorStop(1,'transparent');ctx.fillStyle=sh;ctx.beginPath();ctx.arc(CX,CY,pr*.58,0,Math.PI*2);ctx.fill();
+  for(let i=0;i<s.pts;i++){const a=t*.015*(i%2===0?1:-1.3)+(i/Math.max(s.pts,1))*Math.PI*2,o=pr*(1.18+(i%3)*.2)+Math.sin(t*.04+i)*5,px=CX+Math.cos(a)*o,py=CY+Math.sin(a)*o*.85,ps=1.4+Math.sin(t*.06+i*.9)*.9;ctx.save();ctx.globalAlpha=.45+Math.sin(t*.05+i)*.3;ctx.shadowBlur=8;ctx.shadowColor=`hsl(${h+i*18},100%,70%)`;ctx.fillStyle=`hsl(${h+i*18},100%,76%)`;ctx.beginPath();ctx.arc(px,py,ps,0,Math.PI*2);ctx.fill();ctx.restore();}
+  if(orbEnergy>.65&&Math.random()<.07)spawnP(h);
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vy-=.02;p.life-=p.dec;if(p.life<=0){parts.splice(i,1);continue;}ctx.save();ctx.globalAlpha=p.life*.75;ctx.fillStyle=`hsl(${p.h+30},100%,76%)`;ctx.shadowBlur=5;ctx.shadowColor=`hsl(${p.h},100%,70%)`;ctx.beginPath();ctx.arc(p.x,p.y,p.sz*p.life,0,Math.PI*2);ctx.fill();ctx.restore();}
+}
+function loop(){t++;drawOrb();requestAnimationFrame(loop);}
+const showToast=msg=>{const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2800);};
+
+// ══════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════
+async function boot() {
+  loop();
+  if (window.location.search.includes('code=')) {
+    const ok = await handleCallback();
+    if (!ok) return;
+  }
+  if (!isLoggedIn()) { document.getElementById('authScreen').style.display='flex'; return; }
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appShell').classList.add('visible');
+  const user=getUser();
+  document.getElementById('userChip').textContent=user?.name||'—';
+  const saved=localStorage.getItem('codeorb_ghuser');
+  if(saved) document.getElementById('ghUser').value=saved;
+  if(getGHToken()){
+    ss('info','⟳ Loading progress from Gist…');
+    const gs=await loadFromGist();
+    if(gs){state=gs;ss('ok','✓ Progress loaded from Gist.');}
+    else ss('','');
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>
